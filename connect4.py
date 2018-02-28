@@ -2,8 +2,17 @@ from game import Game
 import numpy as np
 
 class connect4(Game):
-	X = 6
-	Y = 7
+
+	"""
+	Name: __init__
+	Description: constructor of the connect4 class
+				 Calls generateBoard with the correct dementions of a 
+				 connect 4 board
+	Parameters: numpy.matrix values - a matrix representation of the board
+	"""
+	def __init__(self, values=None):
+		super(connect4, self).__init__(6, 7, values)
+
 
 	"""
 	Name: generateBoard
@@ -20,10 +29,26 @@ class connect4(Game):
 		#TODO through error if values doesn't match up with specified shape
 		return values
 
+	"""
+	Name: legalMoves
+	Description: calculates a list of all legal moves that can be performed
+				 given this gamestate
+	Returns: A list of all legal moves
+	"""
 	def legalMoves(self):
 		return [i for i in range(0, len(self.board[0])) if self.board[0,i] == 0]
 
+	"""
+	Name: gameEnd
+	Description: calculates if the game is over and who the winner is
+				 for connect 4 the winner is whoever has 4 peices in a
+				 row, a tie occurs when the entire board is filled with
+				 no winner
+	Returns: player num if there is a winner
+			 0 if the game is not over yet
+	"""
 	def gameEnd(self):
+		countZero = 0
 		for col in range(0, len(self.board)):
 			for row in range(0, len(self.board[col])):
 				if self.board[col,row] != 0:
@@ -33,6 +58,10 @@ class connect4(Game):
 					tr = self.checkDiagnalTopRightBottomLeft(col, row)
 					if h or v or tl or tr:
 						return self.board[col,row]
+				else:
+					countZero += 1
+		if countZero == 0:
+			return (1, -1)
 		return 0
 
 
@@ -49,13 +78,8 @@ class connect4(Game):
 		return False
 
 	def checkVertical(self, col, row, winCondition=4):
-		# print(col+winCondition)
-		# print(len(self.board[col]))
-		# print((row + winCondition) < len(self.board[col]))
 		if col + winCondition < len(self.board[col]):
 			for i in range(1, winCondition+1):
-				print(i)
-				print(self.board[col+i, row], self.board[col, row])
 				if self.board[col+i,row] != self.board[col,row]:
 					print(self.board[col+i, row], self.board[col, row])
 					return False
@@ -92,12 +116,3 @@ class connect4(Game):
 		newGame.move(player, move)
 		return newGame
 
-c = connect4(6,7)
-c.move(1, 3)
-c.move(-1, 3)
-c.move(-1, 3)
-c.move(-1, 3)
-c.move(-1, 3)
-c.move(-1, 3)
-print(c.getBoard())
-print(c.gameEnd())
