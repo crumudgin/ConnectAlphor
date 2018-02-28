@@ -54,8 +54,8 @@ class connect4(Game):
 				if self.board[col,row] != 0:
 					h = self.checkHorizontal(col, row)
 					v = self.checkVertical(col, row)
-					tl = self.checkDiagnalTopLeftBottomRight(col, row)
-					tr = self.checkDiagnalTopRightBottomLeft(col, row)
+					tl = self.checkDiagonalTopLeftBottomRight(col, row)
+					tr = self.checkDiagonalTopRightBottomLeft(col, row)
 					if h or v or tl or tr:
 						return self.board[col,row]
 				else:
@@ -88,6 +88,17 @@ class connect4(Game):
 			return True
 		return False
 
+	"""
+	Name checkVertical
+	Description: checks the a defined number of elements in the column to see
+				 if there are "winConditions" in a column of a non zero value
+	Parameters: int col - the current column index
+				int row - the current row index
+				int winCondition - the number of elements that must be
+								   checked
+	Returns: boolean based on if there were 4 elements in a column on any given
+			 column
+	"""
 	def checkVertical(self, col, row, winCondition=4):
 		if col + winCondition < len(self.board[col]):
 			for i in range(1, winCondition+1):
@@ -97,7 +108,19 @@ class connect4(Game):
 			return True
 		return False
 
-	def checkDiagnalTopLeftBottomRight(self, col, row, winCondition=4):
+	"""
+	Name checkDiagonalTopLeftBottomRight
+	Description: checks the a defined number of elements in the diagonal moving
+				 from top left to bottom right as follows \. to see if there 
+				 are "winConditions" in a diagonal of a non zero value
+	Parameters: int col - the current column index
+				int row - the current row index
+				int winCondition - the number of elements that must be
+								   checked
+	Returns: boolean based on if there were 4 elements in a row on any given
+			 diagonal
+	"""
+	def checkDiagonalTopLeftBottomRight(self, col, row, winCondition=4):
 		if row + winCondition < len(self.board[col]) and col + winCondition < len(self.board):
 			for i in range(1, winCondition+1):
 				if self.board[col+i,row+i] != self.board[col,row]:
@@ -105,7 +128,19 @@ class connect4(Game):
 			return True
 		return False
 
-	def checkDiagnalTopRightBottomLeft(self, col, row, winCondition=4):
+	"""
+	Name checkDiagonalToprightBottomLeft
+	Description: checks the a defined number of elements in the diagonal moving
+				 from top right to bottom left as follows /. to see if there 
+				 are "winConditions" in a diagonal of a non zero value
+	Parameters: int col - the current column index
+				int row - the current row index
+				int winCondition - the number of elements that must be
+								   checked
+	Returns: boolean based on if there were 4 elements in a row on any given
+			 diagonal
+	"""
+	def checkDiagonalTopRightBottomLeft(self, col, row, winCondition=4):
 		if row + winCondition < len(self.board[col]) and col + winCondition >= 0:
 			for i in range(1, winCondition+1):
 				if self.board[col-i,row+i] != self.board[col,row]:
@@ -114,6 +149,18 @@ class connect4(Game):
 		return False
 
 
+	"""
+	Name: move
+	Description: updates the board with the given move. This method does not
+				 check for legality, and will make any move it is able to 
+				 regardless of legality. A piece will be placed at the lowest
+				 0 value
+	Parameters: int player - the number of the player going (1 or -1 for a 2
+							 player game)
+				int move - the number representing the space on the board where
+						   the move is being placed. For connect 4 this will be
+						   a value from 0 - 7 
+	"""
 	def move(self, player, move):
 		col = self.board[:,move]
 		lastZero = 0
@@ -122,6 +169,17 @@ class connect4(Game):
 				lastZero = index
 		self.board[lastZero,move] = player
 
+	"""
+	Name: move
+	Description: creates a new game object with the current board and then performs
+				 the designated move
+	Parameters: int player - the number of the player going (1 or -1 for a 2
+							 player game)
+				int move - the number representing the space on the board where
+						   the move is being placed. For connect 4 this will be
+						   a value from 0 - 7 
+	Returns: a new game object
+	"""
 	def copyAndMove(self, player, move):
 		newGame = connect4(self.x, self.y, self.board)
 		newGame.move(player, move)
