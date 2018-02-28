@@ -23,6 +23,9 @@ class Game(ABC):
 	def __init__(self, boardX, boardY, boardValues=None):
 		self.x = boardX
 		self.y = boardY
+		self.N = 0
+		self.W = 0
+		self.P = 0
 		self.board = self.generateBoard(boardValues)
 
 	"""
@@ -44,6 +47,52 @@ class Game(ABC):
 	"""
 	def getShape(self):
 		return (self.x, self.y)
+
+	"""
+	Name: getN
+	Description: returns the N value for outside manipulation without effecting
+				 the gamestate
+	Returns: N
+	"""
+	def getN():
+		return self.N
+
+	"""
+	Name: setN
+	Description: sets the N value
+	"""
+	def setN(n):
+		self.N = n
+
+	"""
+	Name: getW
+	Description: returns the W value for outside manipulation without effecting
+				 the gamestate
+	Returns: W
+	"""
+	def getW():
+		return self.W
+	"""
+	Name: setW
+	Description: sets the W value
+	"""
+	def setW(w):
+		self.W = w
+
+	"""
+	Name: getP
+	Description: returns the P value for outside manipulation without effecting
+				 the gamestate
+	Returns: P
+	"""
+	def getP():
+		return self.P
+	"""
+	Name: setP
+	Description: sets the P value
+	"""
+	def setP(p):
+		self.P = p
 
 	"""
 	Name: generateBoard
