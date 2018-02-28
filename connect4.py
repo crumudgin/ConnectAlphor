@@ -1,7 +1,7 @@
 from game import Game
 import numpy as np
 
-class connect4(Game):
+class Connect4(Game):
 
 	"""
 	Name: __init__
@@ -11,7 +11,7 @@ class connect4(Game):
 	Parameters: numpy.matrix values - a matrix representation of the board
 	"""
 	def __init__(self, values=None):
-		super(connect4, self).__init__(6, 7, values)
+		super(Connect4, self).__init__(6, 7, values)
 
 
 	"""
@@ -181,7 +181,7 @@ class connect4(Game):
 	Returns: a new game object
 	"""
 	def copyAndMove(self, player, move):
-		newGame = connect4(self.x, self.y, self.board)
+		newGame = Connect4(self.x, self.y, self.board)
 		newGame.move(player, move)
 		return newGame
 
