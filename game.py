@@ -1,6 +1,12 @@
 import numpy as np
 from abc import ABC
 
+"""
+Name: Game
+Inherits: ABC from abc
+Description: An abstract class designed to represent a game played on a 2D board
+Author: Zac Chu
+"""
 class Game(ABC):
 	
 	"""
@@ -29,14 +35,43 @@ class Game(ABC):
 	def generateBoard(values):
 		pass
 
+	"""
+	Name: legalMoves
+	Description: Generates a list of all legal moves given the current gamestate
+	returns: List of all legal moves
+	"""
 	@abstractmeathod
 	def legalMoves():
 		pass
 
+	"""
+	Name: gameEnd
+	Description: determines if the game is over
+	Returns: Winning player(s) or 0 if the game is not over
+	"""
 	@abstractmeathod
 	def gameEnd():
 		pass
 
+	"""
+	Name: move
+	Description: Plays the designated move on the game board for the specified player
+	Parameters: int player - The player moving
+				int move - the move(specified from the legalMoves list)
+	"""
 	@abstractmeathod
 	def move(player, move):
+		pass
+
+	"""
+	Name: move
+	Description: Plays the designated move on the game board for the specified player
+				 and copies the gamestate to a new Game object leaving this object in
+				 the state it was prior to this function call
+	Parameters: int player - The player moving
+				int move - the move(specified from the legalMoves list)
+	Returns: A new Game object updated with the current board having the move played on it
+	"""
+	@abstractmeathod
+	def copyAndMove(player, move):
 		pass
