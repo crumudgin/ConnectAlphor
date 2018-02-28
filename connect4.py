@@ -41,7 +41,7 @@ class connect4(Game):
 	"""
 	Name: gameEnd
 	Description: calculates if the game is over and who the winner is
-				 for connect 4 the winner is whoever has 4 peices in a
+				 for connect 4 the winner is whoever has 4 pieces in a
 				 row, a tie occurs when the entire board is filled with
 				 no winner
 	Returns: player num if there is a winner
@@ -65,6 +65,17 @@ class connect4(Game):
 		return 0
 
 
+	"""
+	Name checkHorizontal
+	Description: checks the a defined number of elements in the row to see
+				 if there are "winConditions" in a row of a non zero value
+	Parameters: int col - the current column index
+				int row - the current row index
+				int winCondition - the number of elements that must be
+								   checked
+	Returns: boolean based on if there were 4 elements in a row on any given
+			 row
+	"""
 	def checkHorizontal(self, col, row, winCondition=4):
 		if row + winCondition < len(self.board):
 			# print(rwinCondition+1)
