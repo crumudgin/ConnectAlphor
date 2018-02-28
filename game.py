@@ -1,10 +1,13 @@
 import numpy as np
-from abc import ABC
+from abc import ABC, abstractmethod
 
 """
 Name: Game
 Inherits: ABC from abc
 Description: An abstract class designed to represent a game played on a 2D board
+Notes: This exists as a base class for all 2d board games to be developed with this
+	   Network, while currently the scope of this project is limited to connect 4
+	   I envision creating other game networks from this same codebase.
 Author: Zac Chu
 """
 class Game(ABC):
@@ -23,16 +26,36 @@ class Game(ABC):
 		self.board = self.generateBoard(boardValues)
 
 	"""
+	Name: getBoard
+	Description: Gets the board so it may be viewed and manipulated without
+				 changing the gamestate in this object
+	Returns: self.board
+	"""
+	def getBoard(self):
+		return self.board
+
+	"""
+	Name: getShape
+	Description: Gets the x and y values of the board so they may be viewed
+				 and manipulated without changing the gamestate in this
+				 object
+	Returns: self.x
+			 self.y
+	"""
+	def getShape(self):
+		return (self.x, self.y)
+
+	"""
 	Name: generateBoard
 	Description: Abstract method detailing a method that generates a 
 				 2D game board matrix of shape y,x where x and y are 
 				 defined in the class
 	Parameters: numpy.matrix - A game board represented as a matrix.
-							   If None, the board will be poppulated
+							   If None, the board will be populated
 							   with 0's
 	"""
-	@abstractmeathod
-	def generateBoard(values):
+	@abstractmethod
+	def generateBoard(self, values=None):
 		pass
 
 	"""
@@ -40,8 +63,8 @@ class Game(ABC):
 	Description: Generates a list of all legal moves given the current gamestate
 	returns: List of all legal moves
 	"""
-	@abstractmeathod
-	def legalMoves():
+	@abstractmethod
+	def legalMoves(self):
 		pass
 
 	"""
@@ -49,8 +72,8 @@ class Game(ABC):
 	Description: determines if the game is over
 	Returns: Winning player(s) or 0 if the game is not over
 	"""
-	@abstractmeathod
-	def gameEnd():
+	@abstractmethod
+	def gameEnd(self):
 		pass
 
 	"""
@@ -59,8 +82,8 @@ class Game(ABC):
 	Parameters: int player - The player moving
 				int move - the move(specified from the legalMoves list)
 	"""
-	@abstractmeathod
-	def move(player, move):
+	@abstractmethod
+	def move(self, player, move):
 		pass
 
 	"""
@@ -72,6 +95,6 @@ class Game(ABC):
 				int move - the move(specified from the legalMoves list)
 	Returns: A new Game object updated with the current board having the move played on it
 	"""
-	@abstractmeathod
-	def copyAndMove(player, move):
+	@abstractmethod
+	def copyAndMove(self, player, move):
 		pass
