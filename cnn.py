@@ -5,70 +5,149 @@ from tensorflow.examples.tutorials.mnist import input_data
 
 mnist = input_data.read_data_sets("MNIST_data/", one_hot=True)
 
-learningRate = .0001
-epochs = 10
-batch_size = 50
-
 x = tf.placeholder(tf.float32, [None, 784])
 x_shaped = tf.reshape(x, [-1, 28, 28, 1])
-y = tf.placeholder(tf.float32, [None, 10])
 
-def createNewConvLayer(input_data, num_input_channels, num_filters, filter_shape, name):
-    conv_filt_shape = [filter_shape[0], filter_shape[1], num_input_channels, num_filters]
-    w = tf.Variable(tf.truncated_normal(conv_filt_shape, stddev=.03), name=name+'_W')
-    bias = tf.Variable(tf.truncated_normal([num_filters]), name=name+'_b')
+class CNN():
 
-    out_layer = tf.nn.conv2d(input_data, w, [1, 1, 1, 1], padding='SAME')
+    def __init__(self, learningRate, epochs):
+        self.learningRate = learningRate
+        self.epochs = epochs
+        self.batchSize = 50
+        self.minimize = None
+        self.y = tf.placeholder(tf.float32, [None, 10])
+        self.previousLayer = x_shaped
 
-    out_layer += bias
+    def createNewConvLayer(self, numInputChannels, numFilters, filterShape, name, nonLiniarity=tf.nn.relu):
+        convFiltShape = [filterShape[0], filterShape[1], numInputChannels, numFilters]
+        w = tf.Variable(tf.truncated_normal(convFiltShape, stddev=.03), name=name+'_W')
+        bias = tf.Variable(tf.truncated_normal([numFilters]), name=name+'_b')
 
-    out_layer = tf.nn.relu(out_layer)
-    return out_layer
+        outLayer = tf.nn.conv2d(self.previousLayer, w, [1, 1, 1, 1], padding='SAME')
 
-def createPoolLayer(in_layer, pool_shape):
-    ksize = [1, pool_shape[0], pool_shape[1], 1]
-    strides = [1, 2, 2, 1]
-    out_layer = tf.nn.max_pool(in_layer, ksize=ksize, strides=strides, padding='SAME')
-    return out_layer
+        outLayer += bias
 
-def createConnectedLayer(flattend, x, z, squash, name):
-    wd = tf.Variable(tf.truncated_normal([x, z], stddev=.03), name='wd' + name)
-    bd = tf.Variable(tf.truncated_normal([z], stddev=0.01), name='bd' + name)
-    dense_layer = tf.matmul(flattend, wd) + bd
-    return dense_layer
+        outLayer = nonLiniarity(outLayer)
+        self.previousLayer = outLayer
+        return outLayer
 
-l1 = createNewConvLayer(x_shaped, 1, 32, [5, 5], 'layer1')
-l2 = createPoolLayer(l1, [2,2])
-l3 = createNewConvLayer(l2, 32, 64, [5, 5], 'layer3')
-l4 = createPoolLayer(l3, [2, 2])
-flattend = tf.reshape(l4, [-1, 7*7*64])
-l5 = tf.nn.relu(createConnectedLayer(flattend, 7*7*64, 1000, tf.nn.relu, "1"))
-l6 = createConnectedLayer(l5, 1000, 10, tf.nn.softmax, "2")
-y_ = tf.nn.softmax(l6)
-cross_entropy = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(logits=l6, labels=y))
+    def createPoolLayer(self, poolShape):
+        ksize = [1, poolShape[0], poolShape[1], 1]
+        strides = [1, 2, 2, 1]
+        outLayer = tf.nn.max_pool(self.previousLayer, ksize=ksize, strides=strides, padding='SAME')
+        self.previousLayer = outLayer
+        return outLayer
+
+    def createConnectedLayer(self, x, z, squash, name):
+        wd = tf.Variable(tf.truncated_normal([x, z], stddev=.03), name='wd' + name)
+        bd = tf.Variable(tf.truncated_normal([z], stddev=0.01), name='bd' + name)
+        dense_layer = tf.matmul(self.previousLayer, wd) + bd
+        self.previousLayer = squash(dense_layer)
+        return dense_layer
+
+    def setNetwork(self, numOfConvs, numOfBlocks, numOfConnects):
+        # self.x = tf.placeholder(tf.float32, [None, 784])
+        # self.x_shaped = tf.reshape(self.x, [-1, 28, 28, 1])
+        # self.x = tf.placeholder(tf.float32, [None, 784])
+        # self.x_shaped = tf.reshape(self.x, [-1, 28, 28, 1])
+        # self.previousLayer = self.x_shaped
+        filters = 32
+        inputChannels = 1
+        counter = 1
+        l1 = self.createConnectedLayer(inputChannels, filters, [5, 5], "1")
+        l2 = self.createPoolLayer([2,2])
+        l3 = self.createConnectedLayer(32, 64, [5, 5], "2")
+        l4 = self.createPoolLayer([2,2])
+        filters = 64
+        # for i in range(0, numOfBlocks):
+        #     for j in range(0, numOfConvs):
+        #         self.createNewConvLayer(inputChannels, filters, [5, 5], str(counter))
+        #         counter += 1
+        #         inputChannels = filters
+        #         filters *= 2
+        #     self.createPoolLayer([2, 2])
+        # self.previousLayer = tf.reshape(self.previousLayer, [-1, 7*7*filters])
+        xSize = 7*7*filters
+        ySize = 1000
+        l5 = self.createConnectedLayer(xSize, 1000, tf.nn.relu, '3')
+        finalOut = self.createConnectedLayer(1000, 10, tf.nn.relu, '4')
+        # for i in range(0, numOfConnects):
+        #     finalOut = self.createConnectedLayer(xSize, ySize, tf.nn.relu, str(counter))
+        #     xSize = ySize
+        #     ySize = 10
+        finalOut = tf.nn.softmax(finalOut)
+        self.previousLayer = finalOut
+        cross_entropy = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(logits=finalOut, labels=self.y))
+        self.minimize = cross_entropy
+        return cross_entropy
+
+    def train(self):
+        if self.minimize is None:
+            print("you need to set the network first")
+            return
+        optimiser = tf.train.AdamOptimizer(learning_rate=self.learningRate).minimize(self.minimize)
+        correct_prediction = tf.equal(tf.argmax(self.y, 1), tf.argmax(self.previousLayer, 1))
+        accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
+        initOptimiser = tf.global_variables_initializer()
+
+        with tf.Session() as sess:
+            # initialise the variables
+            sess.run(initOptimiser)
+            total_batch = int(len(mnist.train.labels) / self.batchSize)
+            for epoch in range(self.epochs):
+                avg_cost = 0
+                for i in range(total_batch):
+                    batch_x, batch_y = mnist.train.next_batch(batch_size=self.batchSize)
+                    _, c = sess.run([optimiser, self.minimize], 
+                                    feed_dict={x: batch_x, self.y: batch_y})
+                    avg_cost += c / total_batch
+                test_acc = sess.run(accuracy, 
+                               feed_dict={x: mnist.test.images, y: mnist.test.labels})
+                print("Epoch:", (epoch + 1), "cost =", "{:.3f}".format(avg_cost), " test accuracy: {:.3f}".format(test_acc))
+
+            print("\nTraining complete!")
+            print(sess.run(accuracy, feed_dict={x: mnist.test.images, y: mnist.test.labels}))
 
 
-optimiser = tf.train.AdamOptimizer(learning_rate=learningRate).minimize(cross_entropy)
+c = CNN(.001, 10)
+c.setNetwork(1, 1, 2)
+c.train()
 
-correct_prediction = tf.equal(tf.argmax(y, 1), tf.argmax(y_, 1))
-accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
 
-init_op = tf.global_variables_initializer()
 
-with tf.Session() as sess:
-    # initialise the variables
-    sess.run(init_op)
-    total_batch = int(len(mnist.train.labels) / batch_size)
-    for epoch in range(epochs):
-        avg_cost = 0
-        for i in range(total_batch):
-            batch_x, batch_y = mnist.train.next_batch(batch_size=batch_size)
-            _, c = sess.run([optimiser, cross_entropy], 
-                            feed_dict={x: batch_x, y: batch_y})
-            avg_cost += c / total_batch
-        test_acc = sess.run(accuracy, 
-                       feed_dict={x: mnist.test.images, y: mnist.test.labels})
-        print("Epoch:", (epoch + 1), "cost =", "{:.3f}".format(avg_cost), " test accuracy: {:.3f}".format(test_acc))
+# l1 = c.createNewConvLayer(1, 32, [5, 5], 'layer1')
+# l2 = c.createPoolLayer([2,2])
+# l3 = c.createNewConvLayer(32, 64, [5, 5], 'layer3')
+# l4 = c.createPoolLayer([2, 2])
 
-    print("\nTraining complete!")
-    print(sess.run(accuracy, feed_dict={x: mnist.test.images, y: mnist.test.labels}))
+# flattend = tf.reshape(l4, [-1, 7*7*64])
+# l5 = tf.nn.relu(c.createConnectedLayer(7*7*64, 1000, tf.nn.relu, "1"))
+# l6 = c.createConnectedLayer(1000, 10, tf.nn.softmax, "2")
+# y_ = tf.nn.softmax(l6)
+# cross_entropy = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(logits=l6, labels=y))
+
+
+# optimiser = tf.train.AdamOptimizer(learning_rate=learningRate).minimize(cross_entropy)
+
+# correct_prediction = tf.equal(tf.argmax(y, 1), tf.argmax(y_, 1))
+# accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
+
+# init_op = tf.global_variables_initializer()
+
+# with tf.Session() as sess:
+#     # initialise the variables
+#     sess.run(init_op)
+#     total_batch = int(len(mnist.train.labels) / batch_size)
+#     for epoch in range(epochs):
+#         avg_cost = 0
+#         for i in range(total_batch):
+#             batch_x, batch_y = mnist.train.next_batch(batch_size=batch_size)
+#             _, c = sess.run([optimiser, cross_entropy], 
+#                             feed_dict={x: batch_x, y: batch_y})
+#             avg_cost += c / total_batch
+#         test_acc = sess.run(accuracy, 
+#                        feed_dict={x: mnist.test.images, y: mnist.test.labels})
+#         print("Epoch:", (epoch + 1), "cost =", "{:.3f}".format(avg_cost), " test accuracy: {:.3f}".format(test_acc))
+
+#     print("\nTraining complete!")
+#     print(sess.run(accuracy, feed_dict={x: mnist.test.images, y: mnist.test.labels}))
