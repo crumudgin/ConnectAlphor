@@ -14,17 +14,17 @@ class CNN():
                  and the passing of data to and from networks
     Parameters: float learningRate - the value that determines the rate
                                      at which the network learns at
-                int epochs - the number of rounds of training that the
-                             network will run through
+                tuple dataSize - the shape of the input data to the network
+                int outputSize - the shape of the output for the network
     """
-    def __init__(self, learningRate, epochs):
+    def __init__(self, learningRate, dataSize, outputSize):
         self.learningRate = learningRate
-        self.epochs = epochs
         self.batchSize = 50
         self.minimize = None
-        self.y = tf.placeholder(tf.float32, [None, 10])
-        self.x = tf.placeholder(tf.float32, [None, 784])
-        self.x_shaped = tf.reshape(self.x, [-1, 28, 28, 1])
+        self.finalOutputSize = outputSize
+        self.y = tf.placeholder(tf.float32, [None, outputSize])
+        self.x = tf.placeholder(tf.float32, [None, dataSize[0] * dataSize[1]])
+        self.x_shaped = tf.reshape(self.x, [-1, dataSize[0], dataSize[1], 1])
         self.previousLayer = self.x_shaped
 
     """
@@ -100,14 +100,11 @@ class CNN():
     Parameters: int numOfConvs - the number of convolution layers in between each
                                  pooling layer
                 int numOfBlocks - the number of pooling layers
-                int numOfConnects - the number of fully connected layers +1 at the end
+                int numOfConnects - the number of fully connected layers at the end
                                     of the network
-                int numOfFinalOutput - the number representing the number of output
-                                       values that the final fully connected layer
-                                       outputs
     Returns: the cost function
     """
-    def setNetwork(self, numOfConvs, numOfBlocks, numOfConnects, numOfFinalOutput):
+    def setNetwork(self, numOfConvs, numOfBlocks, numOfConnects):
         filters = 32
         inputChannels = 1
         counter = 1
@@ -124,7 +121,7 @@ class CNN():
         for i in range(0, numOfConnects-1):
             finalOut = self.createConnectedLayer(xSize, ySize, tf.nn.relu, str(counter))
             xSize = ySize
-        finalOut = self.createConnectedLayer(xSize, numOfFinalOutput, tf.nn.relu, str(counter))
+        finalOut = self.createConnectedLayer(xSize, self.finalOutputSize, tf.nn.relu, str(counter))
         finalOut = tf.nn.softmax(finalOut)
         self.previousLayer = finalOut
         cross_entropy = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(logits=finalOut, labels=self.y))
@@ -136,8 +133,9 @@ class CNN():
     Name: train
     Description: performs training on the network with the goal of minimizing the cost
                  function
+    Parameters: int epochs - the number of rounds of training the network should attempt
     """
-    def train(self):
+    def train(self, epochs):
         if self.minimize is None:
             print("you need to set the network first")
             return
@@ -150,7 +148,7 @@ class CNN():
             # initialise the variables
             sess.run(initOptimiser)
             total_batch = int(len(mnist.train.labels) / self.batchSize)
-            for epoch in range(self.epochs):
+            for epoch in range(epochs):
                 avg_cost = 0
                 for i in range(total_batch):
                     batch_x, batch_y = mnist.train.next_batch(batch_size=self.batchSize)
@@ -165,6 +163,6 @@ class CNN():
             print(sess.run(accuracy, feed_dict={self.x: mnist.test.images, self.y: mnist.test.labels}))
 
 
-c = CNN(.001, 2)
-c.setNetwork(1, 2, 2, 10)
-c.train()
+c = CNN(.001, (28,28), 10)
+c.setNetwork(1, 2, 1)
+c.train(2)
