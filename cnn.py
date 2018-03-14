@@ -5,9 +5,6 @@ from tensorflow.examples.tutorials.mnist import input_data
 
 mnist = input_data.read_data_sets("MNIST_data/", one_hot=True)
 
-x = tf.placeholder(tf.float32, [None, 784])
-x_shaped = tf.reshape(x, [-1, 28, 28, 1])
-
 class CNN():
 
     def __init__(self, learningRate, epochs):
@@ -16,7 +13,9 @@ class CNN():
         self.batchSize = 50
         self.minimize = None
         self.y = tf.placeholder(tf.float32, [None, 10])
-        self.previousLayer = x_shaped
+        self.x = tf.placeholder(tf.float32, [None, 784])
+        self.x_shaped = tf.reshape(self.x, [-1, 28, 28, 1])
+        self.previousLayer = self.x_shaped
 
     def createNewConvLayer(self, numInputChannels, numFilters, filterShape, name, nonLiniarity=tf.nn.relu):
         convFiltShape = [filterShape[0], filterShape[1], numInputChannels, numFilters]
@@ -46,35 +45,23 @@ class CNN():
         return dense_layer
 
     def setNetwork(self, numOfConvs, numOfBlocks, numOfConnects):
-        # self.x = tf.placeholder(tf.float32, [None, 784])
-        # self.x_shaped = tf.reshape(self.x, [-1, 28, 28, 1])
-        # self.x = tf.placeholder(tf.float32, [None, 784])
-        # self.x_shaped = tf.reshape(self.x, [-1, 28, 28, 1])
-        # self.previousLayer = self.x_shaped
         filters = 32
         inputChannels = 1
         counter = 1
-        l1 = self.createConnectedLayer(inputChannels, filters, [5, 5], "1")
-        l2 = self.createPoolLayer([2,2])
-        l3 = self.createConnectedLayer(32, 64, [5, 5], "2")
-        l4 = self.createPoolLayer([2,2])
-        filters = 64
-        # for i in range(0, numOfBlocks):
-        #     for j in range(0, numOfConvs):
-        #         self.createNewConvLayer(inputChannels, filters, [5, 5], str(counter))
-        #         counter += 1
-        #         inputChannels = filters
-        #         filters *= 2
-        #     self.createPoolLayer([2, 2])
-        # self.previousLayer = tf.reshape(self.previousLayer, [-1, 7*7*filters])
-        xSize = 7*7*filters
+        for i in range(0, numOfBlocks):
+            for j in range(0, numOfConvs):
+                self.createNewConvLayer(inputChannels, filters, [5, 5], str(counter))
+                counter += 1
+                inputChannels = filters
+                filters *= 2
+            self.createPoolLayer([2, 2])
+        self.previousLayer = tf.reshape(self.previousLayer, [-1, 7*7*filters//2])
+        xSize = 7*7*filters//2
         ySize = 1000
-        l5 = self.createConnectedLayer(xSize, 1000, tf.nn.relu, '3')
-        finalOut = self.createConnectedLayer(1000, 10, tf.nn.relu, '4')
-        # for i in range(0, numOfConnects):
-        #     finalOut = self.createConnectedLayer(xSize, ySize, tf.nn.relu, str(counter))
-        #     xSize = ySize
-        #     ySize = 10
+        for i in range(0, numOfConnects):
+            finalOut = self.createConnectedLayer(xSize, ySize, tf.nn.relu, str(counter))
+            xSize = ySize
+            ySize = 10
         finalOut = tf.nn.softmax(finalOut)
         self.previousLayer = finalOut
         cross_entropy = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(logits=finalOut, labels=self.y))
@@ -99,55 +86,16 @@ class CNN():
                 for i in range(total_batch):
                     batch_x, batch_y = mnist.train.next_batch(batch_size=self.batchSize)
                     _, c = sess.run([optimiser, self.minimize], 
-                                    feed_dict={x: batch_x, self.y: batch_y})
+                                    feed_dict={self.x: batch_x, self.y: batch_y})
                     avg_cost += c / total_batch
                 test_acc = sess.run(accuracy, 
-                               feed_dict={x: mnist.test.images, y: mnist.test.labels})
+                               feed_dict={self.x: mnist.test.images, self.y: mnist.test.labels})
                 print("Epoch:", (epoch + 1), "cost =", "{:.3f}".format(avg_cost), " test accuracy: {:.3f}".format(test_acc))
 
             print("\nTraining complete!")
-            print(sess.run(accuracy, feed_dict={x: mnist.test.images, y: mnist.test.labels}))
+            print(sess.run(accuracy, feed_dict={self.x: mnist.test.images, self.y: mnist.test.labels}))
 
 
-c = CNN(.001, 10)
-c.setNetwork(1, 1, 2)
+c = CNN(.001, 2)
+c.setNetwork(1, 2, 2)
 c.train()
-
-
-
-# l1 = c.createNewConvLayer(1, 32, [5, 5], 'layer1')
-# l2 = c.createPoolLayer([2,2])
-# l3 = c.createNewConvLayer(32, 64, [5, 5], 'layer3')
-# l4 = c.createPoolLayer([2, 2])
-
-# flattend = tf.reshape(l4, [-1, 7*7*64])
-# l5 = tf.nn.relu(c.createConnectedLayer(7*7*64, 1000, tf.nn.relu, "1"))
-# l6 = c.createConnectedLayer(1000, 10, tf.nn.softmax, "2")
-# y_ = tf.nn.softmax(l6)
-# cross_entropy = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(logits=l6, labels=y))
-
-
-# optimiser = tf.train.AdamOptimizer(learning_rate=learningRate).minimize(cross_entropy)
-
-# correct_prediction = tf.equal(tf.argmax(y, 1), tf.argmax(y_, 1))
-# accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
-
-# init_op = tf.global_variables_initializer()
-
-# with tf.Session() as sess:
-#     # initialise the variables
-#     sess.run(init_op)
-#     total_batch = int(len(mnist.train.labels) / batch_size)
-#     for epoch in range(epochs):
-#         avg_cost = 0
-#         for i in range(total_batch):
-#             batch_x, batch_y = mnist.train.next_batch(batch_size=batch_size)
-#             _, c = sess.run([optimiser, cross_entropy], 
-#                             feed_dict={x: batch_x, y: batch_y})
-#             avg_cost += c / total_batch
-#         test_acc = sess.run(accuracy, 
-#                        feed_dict={x: mnist.test.images, y: mnist.test.labels})
-#         print("Epoch:", (epoch + 1), "cost =", "{:.3f}".format(avg_cost), " test accuracy: {:.3f}".format(test_acc))
-
-#     print("\nTraining complete!")
-#     print(sess.run(accuracy, feed_dict={x: mnist.test.images, y: mnist.test.labels}))
