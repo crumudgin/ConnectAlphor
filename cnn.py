@@ -2,6 +2,7 @@ import numpy as np
 import scipy as sc
 import tensorflow as tf
 from tensorflow.examples.tutorials.mnist import input_data
+from connect4 import Connect4
 
 mnist = input_data.read_data_sets("MNIST_data/", one_hot=True)
 
@@ -22,8 +23,8 @@ class CNN():
         self.batchSize = 50
         self.minimize = None
         self.finalOutputSize = outputSize
-        self.y = tf.placeholder(tf.float32, [None, outputSize])
-        self.x = tf.placeholder(tf.float32, [None, dataSize[0] * dataSize[1]])
+        self.y = tf.placeholder(tf.float32, [None, outputSize], name='y')
+        self.x = tf.placeholder(tf.float32, [None, dataSize[0] * dataSize[1]], name='x')
         self.x_shaped = tf.reshape(self.x, [-1, dataSize[0], dataSize[1], 1])
         self.previousLayer = self.x_shaped
 
@@ -104,7 +105,7 @@ class CNN():
                                     of the network
     Returns: the cost function
     """
-    def setNetwork(self, numOfConvs, numOfBlocks, numOfConnects):
+    def setNetwork(self, numOfConvs, numOfBlocks, numOfConnects, dataSize):
         filters = 32
         inputChannels = 1
         counter = 1
@@ -115,7 +116,7 @@ class CNN():
                 inputChannels = filters
                 filters *= 2
             self.createPoolLayer([2, 2])
-        xSize = 7*7*filters//2
+        xSize = dataSize*filters//2
         ySize = 1000
         self.previousLayer = tf.reshape(self.previousLayer, [-1, xSize])
         for i in range(0, numOfConnects-1):
@@ -135,7 +136,7 @@ class CNN():
                  function
     Parameters: int epochs - the number of rounds of training the network should attempt
     """
-    def train(self, epochs):
+    def train(self, epochs, data, labels, testData, testLabels):
         if self.minimize is None:
             print("you need to set the network first")
             return
@@ -147,22 +148,56 @@ class CNN():
         with tf.Session() as sess:
             # initialise the variables
             sess.run(initOptimiser)
-            total_batch = int(len(mnist.train.labels) / self.batchSize)
+            total_batch = int(len(labels) / self.batchSize)
             for epoch in range(epochs):
                 avg_cost = 0
+                currBatch = 0
+                batch = self.batchSize
                 for i in range(total_batch):
-                    batch_x, batch_y = mnist.train.next_batch(batch_size=self.batchSize)
+                    batch_x = data[currBatch:batch]
+                    batch_y = labels[currBatch:batch]
+                    currBatch = batch
+                    batch += self.batchSize
+                    if batch > len(labels):
+                        batch = len(labels)
                     _, c = sess.run([optimiser, self.minimize], 
                                     feed_dict={self.x: batch_x, self.y: batch_y})
                     avg_cost += c / total_batch
                 test_acc = sess.run(accuracy, 
-                               feed_dict={self.x: mnist.test.images, self.y: mnist.test.labels})
-                print("Epoch:", (epoch + 1), "cost =", "{:.3f}".format(avg_cost), " test accuracy: {:.3f}".format(test_acc))
+                               feed_dict={self.x: testData, self.y: testLabels})
+                print("EPOCH #%s complete accuacy at %s" %(epoch, test_acc))
 
             print("\nTraining complete!")
             print(sess.run(accuracy, feed_dict={self.x: mnist.test.images, self.y: mnist.test.labels}))
 
+    def run(self, data):
+        optimiser = tf.train.AdamOptimizer(learning_rate=self.learningRate).minimize(self.minimize)
+        prediction = self.previousLayer
+        
+        initOptimiser = tf.global_variables_initializer()
 
-c = CNN(.001, (28,28), 10)
-c.setNetwork(1, 2, 1)
-c.train(2)
+        with tf.Session() as sess:
+            # initialise the variables
+            sess.run(initOptimiser)
+                
+            pred = sess.run(prediction,
+                            feed_dict={self.x: data})
+            print("Prediction: ", pred)
+
+
+g = Connect4()
+# print(g.getShape())
+c = CNN(.001, (28, 28), 10)
+c.setNetwork(1, 2, 1, 7*7)
+# board = g.getBoard().flatten().reshape((1, 42))
+# c.run(board)
+# test = np.array([mnist.test.images[0]])
+test = np.array([g.getBoard().flatten()])
+# print(test.shape)
+# c.run(test)
+trainData = np.array([mnist.test.images[0]])
+# trainLables = np.array([mnist.test.images])
+# testData = np.array([mnist.test.images])
+# testLables = np.array([mnist.test.images])
+c.train(10, mnist.train.images, mnist.train.labels, mnist.test.images, mnist.test.labels)
+c.run(trainData)
